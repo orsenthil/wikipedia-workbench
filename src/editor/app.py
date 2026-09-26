@@ -5,7 +5,7 @@ import os
 import re
 from contextlib import asynccontextmanager
 from dataclasses import asdict
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit
@@ -199,7 +199,7 @@ WatchFilter = Literal["all", "stale", "never", "missing", "focus"]
 def _filter_pages(
     pages: list[WatchedPage], focus: set[str], show: WatchFilter, years: int
 ) -> list[WatchedPage]:
-    cutoff = datetime.now(UTC) - timedelta(days=365 * years)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=365 * years)
     match show:
         case "never":
             return [p for p in pages if p.my_edits == 0]
@@ -213,7 +213,7 @@ def _filter_pages(
 
 
 def _sort_pages(pages: list[WatchedPage], sort: str) -> list[WatchedPage]:
-    oldest = datetime.min.replace(tzinfo=UTC)
+    oldest = datetime.min.replace(tzinfo=timezone.utc)
     if sort == "title":
         return sorted(pages, key=lambda p: (p.namespace, p.title.lower()))
     if sort == "activity":

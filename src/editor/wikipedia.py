@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, urlsplit
 
 import httpx
@@ -183,7 +183,7 @@ class WikipediaClient:
                         pageid=c["pageid"],
                         title=c["title"],
                         namespace=c["ns"],
-                        timestamp=datetime.fromisoformat(c["timestamp"]),
+                        timestamp=_timestamp(c["timestamp"]),
                         comment=c.get("comment", ""),
                         size=c.get("size", 0),
                         is_top=bool(c.get("top", False)),
@@ -282,7 +282,7 @@ class WikipediaClient:
                 url=self.page_url(title),
                 my_edits=len(edits),
                 my_last_edit=max(edits) if edits else None,
-                page_last_edit=datetime.fromisoformat(rev["timestamp"]) if rev else None,
+                page_last_edit=_timestamp(rev["timestamp"]) if rev else None,
                 page_last_editor=rev.get("user") if rev else None,
                 missing=rev is None,
             ))
@@ -328,7 +328,7 @@ class WikipediaClient:
             title=title,
             exists=not page.get("missing"),
             revid=rev.get("revid"),
-            timestamp=datetime.fromisoformat(rev["timestamp"]) if rev.get("timestamp") else None,
+            timestamp=_timestamp(rev["timestamp"]) if rev.get("timestamp") else None,
             wikitext=rev.get("slots", {}).get("main", {}).get("content", ""),
             hidden_categories=[c["title"] for c in page.get("categories", [])],
             assessments=page.get("pageassessments", {}),
@@ -355,7 +355,7 @@ class WikipediaClient:
 
     async def pageviews(self, title: str, days: int = 30) -> int | None:
         """Total human pageviews over the last `days` days (Wikimedia REST API)."""
-        end = datetime.now(UTC).date() - timedelta(days=1)
+        end = datetime.now(timezone.utc).date() - timedelta(days=1)
         start = end - timedelta(days=days - 1)
         article = quote(title.replace(" ", "_"), safe="")
         project = urlsplit(self.api_url).netloc
@@ -409,6 +409,11 @@ NAMESPACES = {"": 0, "Talk": 1, "User": 2, "User talk": 3, "Wikipedia": 4, "Wiki
               "File": 6, "File talk": 7, "Template": 10, "Template talk": 11,
               "Help": 12, "Help talk": 13, "Category": 14, "Category talk": 15,
               "Portal": 100, "Portal talk": 101, "Draft": 118, "Draft talk": 119}
+
+
+def _timestamp(value: str) -> datetime:
+    """Parse MediaWiki's "2026-09-20T14:23:54Z" (Python 3.10's fromisoformat rejects "Z")."""
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 def _talk_title(title: str, ns: int) -> str:

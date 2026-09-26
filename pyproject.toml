@@ -5,7 +5,7 @@ description = "Wikipedia Workbench: a personal workbench for focused Wikipedia e
 authors = [
     { name = "Senthil Kumaran", email = "senthil@python.org" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
