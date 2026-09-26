@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ user }} · Articles{% endblock %}
+{% block content %}
+<h1>Articles edited by {{ user }}</h1>
+<p class="muted">{{ articles|length }} articles · ★ adds a page to your focus list · JSON at <a href="/api/articles">/api/articles</a></p>
+<div class="table-wrap"><table>
+<tr><th></th><th><a href="?sort=title">Article</a></th><th><a href="?sort=edits">Edits</a></th>
+<th><a href="?sort=recent">Last edited</a></th></tr>
+{% for a in articles %}
+<tr>
+  <td>
+    {% set on = a.title in focus %}
+    <form method="post" action="/focus/{{ 'remove' if on else 'add' }}">
+      <input type="hidden" name="title" value="{{ a.title }}">
+      <button class="star {{ 'on' if on }}" title="{{ 'Remove from' if on else 'Add to' }} focus">{{ '★' if on else '☆' }}</button>
+    </form>
+  </td>
+  <td><a href="{{ a.url }}">{{ a.title }}</a> <a class="improve" href="/article?title={{ a.title|urlencode }}">improve →</a></td>
+  <td class="num">{{ a.edit_count }}</td>
+  <td class="date">{{ a.last_edit.strftime('%Y-%m-%d') }}</td>
+</tr>
+{% endfor %}
+</table></div>
+{% endblock %}

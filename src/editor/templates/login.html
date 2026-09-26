@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Log in · Wikipedia Workbench{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<form method="post" action="/login" style="max-width: 320px; margin: 15vh auto 0;">
+  <h1>Wikipedia Workbench</h1>
+  {% if error %}<p class="flash">{{ error }}</p>{% endif %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <p><input type="password" name="password" placeholder="Password" autofocus required
+            style="width: 100%; box-sizing: border-box; font: inherit; padding: .4rem .6rem;"></p>
+  <button type="submit">Log in</button>
+</form>
+{% endblock %}

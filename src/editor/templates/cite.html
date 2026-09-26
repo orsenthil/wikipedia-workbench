@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Cite · Wikipedia Workbench{% endblock %}
+{% block content %}
+<h1>Citation builder</h1>
+<p class="muted">Paste a URL, DOI or ISBN. Metadata comes from Wikipedia's citation service, the one behind the visual editor's Cite button. Check every field against the source before you paste it.</p>
+{% if article %}
+<p>For <a href="/article?title={{ article|urlencode }}">{{ article }}</a>
+  {% if section_no is not none %} · <a href="{{ page_url(article) }}?action=edit&section={{ section_no }}" target="_blank">edit that section on Wikipedia ↗</a>{% endif %}</p>
+{% endif %}
+
+<form method="get" action="/cite" class="citeform">
+  <input type="hidden" name="article" value="{{ article }}">
+  {% if section_no is not none %}<input type="hidden" name="section_no" value="{{ section_no }}">{% endif %}
+  <label class="wide">Source <input type="text" name="source" value="{{ source }}" placeholder="https://…, 10.1145/…, 978-…" required autofocus></label>
+  <label>Pages <input type="text" name="pages" value="{{ pages }}" placeholder="49–52" size="8"></label>
+  <label>Ref name <input type="text" name="name" value="{{ name }}" placeholder="optional" size="14"></label>
+  <label>Template
+    <select name="template">
+      <option value="">automatic</option>
+      {% for t in templates_list %}<option {{ 'selected' if t == template and not item }}>{{ t }}</option>{% endfor %}
+    </select>
+  </label>
+  <label><input type="checkbox" name="archive" value="true" {{ 'checked' if archive }}> Add Wayback Machine archive</label>
+  <button type="submit">Build</button>
+</form>
+
+{% if note %}<p class="flash">{{ note }}</p>{% endif %}
+
+{% if wikitext %}
+<h2>Wikitext</h2>
+<textarea id="cite-out" rows="6" spellcheck="false">{{ wikitext }}</textarea>
+<div class="bar">
+  <button type="button" data-copy="cite-out">Copy</button>
+  <span class="muted">Edit here or after pasting. Place it straight after the sentence it supports, following any punctuation.</span>
+</div>
+{% if source.startswith('http') %}
+<p class="muted">
+  <a href="{{ source }}" target="_blank">Open source ↗</a> ·
+  <a href="https://web.archive.org/save/{{ source }}" target="_blank">Save page now on the Wayback Machine ↗</a>
+  {% if archive_url %} · <a href="{{ archive_url }}" target="_blank">Snapshot used ↗</a>{% endif %}
+</p>
+{% endif %}
+{% if item %}
+<details><summary class="muted">Raw metadata from Citoid</summary>
+<pre class="raw">{{ item|tojson(indent=2) }}</pre></details>
+{% endif %}
+{% endif %}
+
+<style>
+  .citeform { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: end; }
+  .citeform label { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; color: var(--muted); }
+  .citeform label:has(input[type=checkbox]) { flex-direction: row; align-items: center; }
+  .citeform .wide { flex: 1 1 100%; } .citeform .wide input { width: 100%; box-sizing: border-box; }
+  select { font: inherit; padding: .25rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+  pre.raw { font-size: .8rem; overflow-x: auto; background: var(--chip); padding: .75rem; border-radius: 6px; }
+</style>
+{% endblock %}

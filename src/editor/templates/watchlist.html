@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ user }} · Watchlist{% endblock %}
+{% block content %}
+<h1>Watchlist triage</h1>
+{% if not configured %}
+<p>Reading and changing your watchlist needs a login. Create a bot password:</p>
+<ol>
+  <li>Open <a href="https://en.wikipedia.org/wiki/Special:BotPasswords">Special:BotPasswords</a> and give it a name, such as <code>editor</code>.</li>
+  <li>Grant only <b>View your watchlist</b> and <b>Edit your watchlist</b>.</li>
+  <li>Put the credentials in a <code>.env</code> file (see <code>.env.example</code>) and restart the app.</li>
+</ol>
+{% else %}
+<p class="muted">Page and talk page count as one. “Your edits” includes edits to either. Pages in your focus list can't be unwatched from here.</p>
+
+{% set labels = {"all": "All", "stale": "Not edited by you in " ~ years ~ "+ years", "never": "Never edited by you", "missing": "Deleted / missing", "focus": "Focus"} %}
+<div class="chips">
+  {% for key, label in labels.items() %}
+  <a href="?show={{ key }}&years={{ years }}&sort={{ sort }}" class="{{ 'on' if show == key }}">{{ label }} · {{ counts[key] }}</a>
+  {% endfor %}
+</div>
+
+<form method="post" action="/watchlist/unwatch" id="triage">
+<div class="bar">
+  <label><input type="checkbox" id="all"> Select all shown</label>
+  <span class="muted" id="count">0 selected</span>
+  <button class="danger" type="submit"
+          onclick="return confirm('Unwatch ' + document.querySelectorAll('input[name=titles]:checked').length + ' page(s) on Wikipedia?')">Unwatch selected</button>
+</div>
+<div class="table-wrap"><table>
+<tr>
+  <th></th><th></th>
+  <th><a href="?show={{ show }}&years={{ years }}&sort=title">Page</a></th>
+  <th>Your edits</th>
+  <th><a href="?show={{ show }}&years={{ years }}&sort=mine">You last edited</a></th>
+  <th><a href="?show={{ show }}&years={{ years }}&sort=activity">Page last edited</a></th>
+</tr>
+{% for p in pages %}
+{% set on = p.title in focus %}
+<tr>
+  <td>{% if not on %}<input type="checkbox" name="titles" value="{{ p.title }}">{% endif %}</td>
+  <td>
+    <button class="star {{ 'on' if on }}" name="title" value="{{ p.title }}"
+            formaction="/focus/{{ 'remove' if on else 'add' }}"
+            title="{{ 'Remove from' if on else 'Add to' }} focus">{{ '★' if on else '☆' }}</button>
+  </td>
+  <td>
+    <a href="{{ p.url }}">{{ p.title }}</a> <a class="improve" href="/article?title={{ p.title|urlencode }}">improve →</a>
+    {% if p.missing %}<span class="tag warn">missing</span>{% endif %}
+  </td>
+  <td class="num">{{ p.my_edits or '' }}</td>
+  <td class="date">{{ p.my_last_edit.strftime('%Y-%m-%d') if p.my_last_edit else '—' }}</td>
+  <td class="date">{{ p.page_last_edit.strftime('%Y-%m-%d') if p.page_last_edit else '—' }}
+    {% if p.page_last_editor %}<span class="muted">{{ p.page_last_editor }}</span>{% endif %}</td>
+</tr>
+{% else %}
+<tr><td colspan="6" class="muted">Nothing here.</td></tr>
+{% endfor %}
+</table></div>
+</form>
+<script>
+  const boxes = () => document.querySelectorAll('input[name=titles]');
+  const update = () => document.getElementById('count').textContent =
+    document.querySelectorAll('input[name=titles]:checked').length + ' selected';
+  document.getElementById('all').addEventListener('change', e => { boxes().forEach(b => b.checked = e.target.checked); update(); });
+  document.getElementById('triage').addEventListener('change', update);
+</script>
+{% endif %}
+{% endblock %}

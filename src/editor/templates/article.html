@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · Improve{% endblock %}
+{% block content %}
+{% set r = report %}
+<div style="display:flex; gap:.75rem; align-items:baseline; flex-wrap:wrap">
+  <h1><a href="{{ page_url(page.title) }}">{{ page.title }}</a></h1>
+  <form method="post" action="/focus/{{ 'remove' if in_focus else 'add' }}">
+    <input type="hidden" name="title" value="{{ page.title }}">
+    <button class="star {{ 'on' if in_focus }}" title="{{ 'Remove from' if in_focus else 'Add to' }} focus">{{ '★' if in_focus else '☆' }}</button>
+  </form>
+</div>
+<p class="muted">
+  {% for project, a in page.assessments.items() if project != "Project-independent assessment" %}
+    <span class="tag">{{ project }}: {{ a.class or '?' }}{% if a.importance %} · {{ a.importance }}{% endif %}</span>
+  {% endfor %}
+  {{ r.stats.references }} references ·
+  {% if views is not none %}{{ "{:,}".format(views) }} views in 30 days · {% endif %}
+  last edited {{ page.timestamp.strftime('%Y-%m-%d') if page.timestamp else '?' }} ·
+  you've made {{ my_edits }} edit{{ '' if my_edits == 1 else 's' }} here
+</p>
+<p class="muted">
+  <a href="{{ page_url(page.talk_title) }}">Talk page</a>
+  {% for a in archive_pages %} · <a href="{{ page_url(a) }}">{{ a.split('/')[-1] }}</a>{% endfor %}
+  · <a href="{{ page_url(page.title) }}?action=history">History</a>
+  · <a href="https://xtools.wmcloud.org/articleinfo/en.wikipedia.org/{{ page.title|urlencode }}">XTools</a>
+</p>
+
+<h2>Suggestions <span class="muted">({{ suggestions|length }})</span></h2>
+{% if not suggestions %}<p class="muted">{{ 'Everything left has been dismissed.' if dismissed else 'Nothing found by the mechanical checks.' }}</p>{% endif %}
+<div class="table-wrap"><table>
+{% for f in suggestions %}
+<tr>
+  <td><span class="sev {{ f.severity }}">{{ f.severity }}</span></td>
+  <td><span class="tag">{{ f.kind }}</span></td>
+  <td>
+    <b>{{ f.message }}</b>{% if f.section %} <span class="muted">in § {{ f.section }}</span>{% endif %}
+    {% if f.detail %}<div class="muted">{{ f.detail }}</div>{% endif %}
+    {% if f.snippet %}<div class="snippet">{{ f.snippet }}</div>{% endif %}
+    <div class="actions">
+      {% if f.url %}<a href="{{ f.url }}" target="_blank">{{ f.url|truncate(70) }}</a>{% endif %}
+      {% if f.url and (f.kind == 'talk' or 'Bare URL' in f.message) %}
+        <a href="/cite?source={{ f.url|urlencode }}&article={{ page.title|urlencode }}{% if f.section_no is not none %}&section_no={{ f.section_no }}{% endif %}">build citation →</a>
+      {% endif %}
+      {% if f.section_no is not none %}
+        <a href="{{ page_url(page.title) }}?action=edit&section={{ f.section_no }}" target="_blank">edit § {{ f.section or 'lead' }} ↗</a>
+      {% endif %}
+      <form method="post" action="/article/dismiss" class="inline">
+        <input type="hidden" name="title" value="{{ page.title }}">
+        <input type="hidden" name="key" value="{{ f.key }}">
+        <input type="hidden" name="message" value="{{ f.message }}">
+        <button class="link muted" title="Reviewed: hide this suggestion for this article">dismiss</button>
+      </form>
+    </div>
+  </td>
+</tr>
+{% endfor %}
+</table></div>
+
+{% if dismissed %}
+<details class="dismissed">
+  <summary class="muted">Dismissed ({{ dismissed|length }})</summary>
+  <div class="table-wrap"><table>
+  {% for f in dismissed %}
+  <tr>
+    <td class="muted"><span class="tag">{{ f.kind }}</span> {{ f.message }}{% if f.section %} · § {{ f.section }}{% endif %}
+      {% if f.snippet %}<div class="snippet">{{ f.snippet }}</div>{% endif %}</td>
+    <td>
+      <form method="post" action="/article/restore">
+        <input type="hidden" name="title" value="{{ page.title }}">
+        <input type="hidden" name="key" value="{{ f.key }}">
+        <button class="link">restore</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+  </table></div>
+</details>
+{% endif %}
+
+<h2>Talk page <span class="muted">({{ threads|length }} thread{{ '' if threads|length == 1 else 's' }})</span></h2>
+{% if not page.talk_wikitext %}<p class="muted">No talk page yet.</p>
+{% elif not threads %}<p class="muted">No discussions, only project banners.</p>{% endif %}
+<div class="table-wrap"><table>
+{% for t in threads %}
+<tr>
+  <td>
+    <a href="{{ page_url(page.talk_title) }}#{{ t.heading|replace(' ', '_') }}"><b>{{ t.heading }}</b></a>
+    {% if t.resolved %}<span class="tag">resolved</span>{% endif %}
+    {% if t.edit_request %}<span class="tag warn">edit request</span>{% endif %}
+    <div class="snippet">{{ t.snippet }}</div>
+  </td>
+  <td class="date">{{ t.last_comment.strftime('%Y-%m-%d') if t.last_comment else '—' }}</td>
+  <td class="num" title="comments">{{ t.comments }} 💬</td>
+  <td class="muted">{{ t.participants|join(', ')|truncate(60) }}</td>
+</tr>
+{% endfor %}
+</table></div>
+
+<h2>References <span class="muted">({{ r.references|length }})</span></h2>
+<p class="muted">
+  {% if archives %}Wayback Machine snapshots are shown closest to each citation's access-date. Check each one shows the cited content before using it.
+  {% else %}<a href="?title={{ page.title|urlencode }}&archives=1">Look up Wayback Machine snapshots</a> for references without an archive-url (takes a few seconds).{% endif %}
+</p>
+<div class="table-wrap"><table>
+<tr><th>#</th><th>Source</th><th>Notes</th>{% if archives %}<th>Snapshot</th>{% endif %}</tr>
+{% for ref in r.references %}
+<tr>
+  <td class="num">{{ ref.index + 1 }}</td>
+  <td>
+    {% if ref.url %}<a href="{{ ref.url }}">{{ ref.title or ref.url }}</a>{% else %}{{ ref.title }}{% endif %}
+    <div class="muted">{{ ref.template or 'untemplated' }}{% if ref.section %} · § {{ ref.section }}{% endif %}</div>
+  </td>
+  <td class="muted">
+    {{ ref.problems|join('; ') }}
+    {% if not ref.template and ref.url %}
+      <div><a href="/cite?source={{ ref.url|urlencode }}&article={{ page.title|urlencode }}&section_no={{ ref.section_no }}">build citation →</a></div>
+    {% endif %}
+    {% if ref.index in with_archive %}
+      <details class="fix"><summary>Archived version to paste</summary>
+        <p>Find the original in <a href="{{ page_url(page.title) }}?action=edit&section={{ ref.section_no }}" target="_blank">§ {{ ref.section or 'lead' }} ↗</a> and replace it with:</p>
+        <textarea id="ref-{{ ref.index }}" rows="{{ [with_archive[ref.index].count('\n') + 2, 4]|max }}" spellcheck="false">{{ with_archive[ref.index] }}</textarea>
+        <button type="button" data-copy="ref-{{ ref.index }}">Copy</button>
+        <span class="muted">Set <code>url-status=dead</code> if the original link no longer works.</span>
+      </details>
+    {% endif %}
+  </td>
+  {% if archives %}<td>
+    {% set snap = snapshots.get(ref.index) %}
+    {% if snap %}<a href="{{ snap }}">{{ snap.split('/')[4][:8] }}</a>{% elif ref.has_archive %}already archived{% elif ref.url %}none found{% endif %}
+  </td>{% endif %}
+</tr>
+{% endfor %}
+</table></div>
+
+<style>
+  .sev { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+  .sev.high { color: var(--warn); } .sev.medium { color: var(--star); } .sev.low { color: var(--muted); }
+  .snippet { font-size: .9rem; color: var(--muted); border-left: 3px solid var(--line);
+             padding-left: .5rem; margin-top: .25rem; }
+  h2 { font-size: 1.15rem; margin-top: 2rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-top: .25rem; font-size: .9rem; }
+  form.inline { display: inline; margin-left: auto; }
+  button.link.muted { color: var(--muted); font-size: .85rem; }
+  details.dismissed { margin-top: .75rem; } details.dismissed summary { cursor: pointer; }
+  details.fix { margin-top: .4rem; color: var(--fg); } details.fix summary { cursor: pointer; color: var(--accent); }
+</style>
+{% endblock %}

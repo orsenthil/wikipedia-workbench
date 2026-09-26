@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Wikipedia Workbench{% endblock %}</title>
+<style>
+  :root { --bg: #fff; --fg: #1d1d1f; --muted: #6b6b70; --line: #e3e3e6; --accent: #2458c6;
+          --chip: #f1f1f4; --warn: #b3261e; --star: #c98a00; --flash: #eef4e8; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #17171a; --fg: #ececef; --muted: #9a9aa2; --line: #2e2e33; --accent: #7fa6ff;
+            --chip: #26262b; --warn: #ff8a80; --star: #f2c14e; --flash: #1f2a1a; }
+  }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, sans-serif;
+         max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+  nav { display: flex; gap: 1.25rem; align-items: baseline; margin-bottom: 1.5rem; }
+  nav { flex-wrap: wrap; }
+  nav .me { margin-left: auto; color: var(--muted); }
+  nav a.brand { color: var(--fg); font-weight: 700; margin-right: .5rem; }
+  nav a.active { color: var(--fg); font-weight: 600; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  .muted { color: var(--muted); }
+  .flash { background: var(--flash); padding: .5rem .75rem; border-radius: 6px; margin: 1rem 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0; }
+  .chips a { background: var(--chip); color: var(--fg); padding: .2rem .7rem; border-radius: 999px; }
+  .chips a.on { background: var(--accent); color: var(--bg); }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; white-space: nowrap; } th a { color: inherit; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.date { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--chip);
+           color: var(--fg); border-radius: 6px; padding: .25rem .7rem; }
+  button.link { border: none; background: none; padding: 0; color: var(--accent); }
+  button.star { border: none; background: none; padding: 0 .25rem; color: var(--muted); font-size: 1.1rem; }
+  button.star.on { color: var(--star); }
+  button.danger { background: var(--warn); color: var(--bg); border-color: var(--warn); }
+  .bar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin: .75rem 0;
+         position: sticky; top: 0; background: var(--bg); padding: .5rem 0; z-index: 1; }
+  a.improve { font-size: .85rem; margin-left: .35rem; white-space: nowrap; }
+  .tag { font-size: .8rem; padding: 0 .4rem; border-radius: 4px; background: var(--chip); color: var(--muted); }
+  .tag.warn { color: var(--warn); }
+  textarea { width: 100%; box-sizing: border-box; font: 13px/1.45 ui-monospace, Menlo, monospace;
+             padding: .5rem; border: 1px solid var(--line); border-radius: 6px;
+             background: var(--bg); color: var(--fg); }
+  input[type=text] { font: inherit; padding: .25rem .5rem; border: 1px solid var(--line);
+                     border-radius: 6px; background: var(--bg); color: var(--fg); }
+</style>
+</head><body>
+{% block nav %}
+<nav>
+  <a href="/" class="brand">Wikipedia Workbench</a>
+  <a href="/" class="{{ 'active' if request.url.path in ('/', '/article') }}">Improve</a>
+  <a href="/articles" class="{{ 'active' if request.url.path == '/articles' }}">Articles</a>
+  <a href="/watchlist" class="{{ 'active' if request.url.path == '/watchlist' }}">Watchlist</a>
+  <a href="/focus" class="{{ 'active' if request.url.path == '/focus' }}">Focus</a>
+  <a href="/cite" class="{{ 'active' if request.url.path == '/cite' }}">Cite</a>
+  <span class="me">{{ user }}</span>
+  {% if not local() %}
+  <form method="post" action="/logout"><button class="link">Log out</button></form>
+  {% endif %}
+</nav>
+{% endblock %}
+{% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+{% block content %}{% endblock %}
+<script>
+  // Copy buttons: <button data-copy="textarea-id">
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    const el = document.getElementById(btn.dataset.copy);
+    try { await navigator.clipboard.writeText(el.value ?? el.textContent); }
+    catch { el.select(); document.execCommand('copy'); }
+    const label = btn.textContent; btn.textContent = 'Copied ✓';
+    setTimeout(() => btn.textContent = label, 1500);
+  });
+</script>
+</body></html>

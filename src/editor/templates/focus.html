@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ user }} · Focus{% endblock %}
+{% block content %}
+<h1>Focus list</h1>
+<p class="muted">The pages you've chosen to work on. Stored locally, not on Wikipedia.</p>
+
+<form method="post" action="/focus/add" class="bar">
+  <input type="text" name="title" placeholder="Page title, e.g. Multitenancy" required size="30">
+  <input type="text" name="note" placeholder="Why / what to do (optional)" size="35">
+  <button type="submit">Add</button>
+</form>
+
+<div class="table-wrap"><table>
+<tr><th>Page</th><th>Note</th><th>Added</th><th></th></tr>
+{% for f in items %}
+<tr>
+  <td><a href="{{ page_url(f.title) }}">{{ f.title }}</a> <a class="improve" href="/article?title={{ f.title|urlencode }}">improve →</a></td>
+  <td>{{ f.note }}</td>
+  <td class="date">{{ f.added_at.strftime('%Y-%m-%d') }}</td>
+  <td>
+    <form method="post" action="/focus/remove">
+      <input type="hidden" name="title" value="{{ f.title }}">
+      <button>Remove</button>
+    </form>
+  </td>
+</tr>
+{% else %}
+<tr><td colspan="4" class="muted">No focus pages yet. Star pages on the Articles or Watchlist views.</td></tr>
+{% endfor %}
+</table></div>
+{% endblock %}

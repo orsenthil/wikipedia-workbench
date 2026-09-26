@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Improve · Wikipedia Workbench{% endblock %}
+{% block content %}
+<section class="start">
+  <h1>Article to improve</h1>
+  <p class="muted">Paste a Wikipedia URL or type a title. You'll get suggestions from the article and its talk page, with links to edit each section and to build citations.</p>
+  <form method="get" action="/article" class="big-search">
+    <input type="text" name="title" placeholder="e.g. O(1) scheduler or https://en.wikipedia.org/wiki/…"
+           required autofocus aria-label="Article title or URL">
+    <button type="submit">Find improvements</button>
+  </form>
+
+  {% if focus %}
+  <h2>From your focus list</h2>
+  <ul class="picks">
+    {% for f in focus %}
+    <li><a href="/article?title={{ f.title|urlencode }}">{{ f.title }}</a>{% if f.note %} <span class="muted">· {{ f.note }}</span>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Tip: star pages on <a href="/articles">Articles</a> or <a href="/watchlist">Watchlist</a> to keep a focus list here.</p>
+  {% endif %}
+</section>
+
+<style>
+  .start { max-width: 640px; margin: 12vh auto 0; text-align: center; }
+  .start h1 { font-size: 2rem; margin-bottom: .5rem; }
+  .big-search { display: flex; gap: .5rem; margin: 1.5rem 0 2.5rem; }
+  .big-search input { flex: 1; min-width: 0; font-size: 1.1rem; padding: .7rem .9rem; border-radius: 10px; }
+  .big-search button { font-size: 1rem; padding: .7rem 1.1rem; border-radius: 10px;
+                       background: var(--accent); color: var(--bg); border-color: var(--accent); white-space: nowrap; }
+  .start h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin-top: 0; }
+  .picks { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+  .picks li { background: var(--chip); padding: .3rem .8rem; border-radius: 999px; }
+  @media (max-width: 520px) { .big-search { flex-direction: column; } .start { margin-top: 6vh; } }
+</style>
+{% endblock %}
